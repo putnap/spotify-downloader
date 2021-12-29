@@ -53,8 +53,6 @@ def _set_id3_mp3(converted_file_path: str, song_object: SongObject):
 
     audio_file = _embed_mp3_cover(audio_file, song_object, converted_file_path)
     audio_file = _embed_mp3_lyrics(audio_file, song_object)
-    # ! setting song links as comment (helpful for devs)
-    audio_file.add(Comment(encoding=3, text=song_object.youtube_link))
 
     audio_file.save(v2_version=3)
 
@@ -252,9 +250,9 @@ def _embed_ogg_metadata(audio_file, song_object: SongObject):
         audio_file["year"] = years[0]
 
     # set youtube link as comment
-    youtube_link = song_object.youtube_link
-    if youtube_link:
-        audio_file["comment"] = youtube_link
+    song_link = song_object.song_link
+    if song_link:
+        audio_file["comment"] = song_link
 
     # set lyrics
     lyrics = song_object.lyrics

@@ -8,7 +8,7 @@ from spotdl.providers import lyrics_providers, metadata_provider
 def parse_query(
     query: List[str],
     format,
-    use_youtube,
+    provider,
     generate_m3u,
     lyrics_provider,
     threads,
@@ -29,7 +29,7 @@ def parse_query(
             parse_request(
                 request,
                 format,
-                use_youtube,
+                provider,
                 generate_m3u,
                 lyrics_provider,
                 threads,
@@ -54,7 +54,7 @@ def parse_query(
 def parse_request(
     request: str,
     output_format: str = None,
-    use_youtube: bool = False,
+    provider: str = 'ytm',
     generate_m3u: bool = False,
     lyrics_provider: str = None,
     threads: int = 1,
@@ -85,10 +85,10 @@ def parse_request(
     elif "open.spotify.com" in request and "track" in request:
         print("Fetching Song...")
         song = song_gatherer.from_spotify_url(
-            request, output_format, use_youtube, lyrics_provider
+            request, output_format, provider, lyrics_provider
         )
         try:
-            song_list = [song] if song.youtube_link is not None else []
+            song_list = [song] if song.song_link is not None else []
         except (OSError, ValueError, LookupError):
             song_list = []
     elif "open.spotify.com" in request and "album" in request:
@@ -96,7 +96,7 @@ def parse_request(
         song_list = song_gatherer.from_album(
             request,
             output_format,
-            use_youtube,
+            provider,
             lyrics_provider,
             generate_m3u,
             threads,
@@ -107,7 +107,7 @@ def parse_request(
         song_list = song_gatherer.from_playlist(
             request,
             output_format,
-            use_youtube,
+            provider,
             lyrics_provider,
             generate_m3u,
             threads,
@@ -116,18 +116,18 @@ def parse_request(
     elif "open.spotify.com" in request and "artist" in request:
         print("Fetching artist...")
         song_list = song_gatherer.from_artist(
-            request, output_format, use_youtube, lyrics_provider, threads
+            request, output_format, provider, lyrics_provider, threads
         )
     elif request == "saved":
         print("Fetching Saved Songs...")
         song_list = song_gatherer.from_saved_tracks(
-            output_format, use_youtube, lyrics_provider, threads
+            output_format, provider, lyrics_provider, threads
         )
     else:
         print('Searching Spotify for song named "%s"...' % request)
         try:
             song_list = song_gatherer.from_search_term(
-                request, output_format, use_youtube, lyrics_provider
+                request, output_format, provider, lyrics_provider
             )
         except Exception as e:
             print(e)

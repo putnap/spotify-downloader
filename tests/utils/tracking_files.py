@@ -1,6 +1,6 @@
 back_in_black = [
     {
-        "youtube_link": "https://www.youtube.com/watch?v=9vWNauaZAgg",
+        "song_link": "https://www.youtube.com/watch?v=9vWNauaZAgg",
         "raw_track_meta": {
             "album": {
                 "album_type": "album",

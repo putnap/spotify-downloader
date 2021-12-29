@@ -217,6 +217,15 @@ class _ProgressTracker:
 
         self.progress = 100
         self.update("Skipping")
+        
+
+    def notify_download_not_found(self) -> None:
+        """
+        updates progress bar to reflect a song was not found
+        """
+
+        self.progress = 0
+        self.update("Not Found")
 
     def ytdl_progress_hook(self, data) -> None:
         """
@@ -233,6 +242,18 @@ class _ProgressTracker:
             if file_bytes and downloaded_bytes:
                 self.progress = downloaded_bytes / file_bytes * 90
 
+            self.update("Downloading")
+
+    def progress_hook(self, block_num, block_size, total_size) -> None:
+        """
+        Progress hook for youtube-dl. It is called each time
+        bytes are read from youtube.
+        """
+
+        # ! This will be called until download is complete, i.e we get an overall
+        downloaded = block_num * block_size
+        if downloaded < total_size:
+            self.progress = downloaded / total_size * 95
             self.update("Downloading")
 
     def notify_youtube_download_completion(self) -> None:
@@ -296,7 +317,7 @@ class _ProgressTracker:
         )
 
         # If task is complete
-        if self.progress == 100 or message == "Error":
+        if self.progress == 100 or message == "Error" or message == "Not Found":
             self.parent.overall_completed_tasks += 1
             if self.parent.is_legacy:
                 self.parent._rich_progress_bar.remove_task(self.task_id)

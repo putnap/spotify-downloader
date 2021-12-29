@@ -27,6 +27,7 @@ def console_entry_point():
 
     # Check if ffmpeg has correct version, if not exit
     if (
+        arguments.provider != 'bfh' and
         ffmpeg.has_correct_version(arguments.ignore_ffmpeg_version, args_dict["ffmpeg"])
         is False
     ):
@@ -78,7 +79,7 @@ def console_entry_point():
         song_list = parse_query(
             arguments.query,
             arguments.output_format,
-            arguments.use_youtube,
+            arguments.provider,
             arguments.generate_m3u,
             arguments.lyrics_provider,
             arguments.search_threads,

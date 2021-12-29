@@ -11,14 +11,14 @@ class SongObject:
         raw_track_meta,
         raw_album_meta,
         raw_artist_meta,
-        youtube_link,
+        song_link,
         lyrics,
         playlist,
     ):
         self._raw_track_meta = raw_track_meta
         self._raw_album_meta = raw_album_meta
         self._raw_artist_meta = raw_artist_meta
-        self._youtube_link = youtube_link
+        self._song_link = song_link
         self._lyrics = lyrics
         self._playlist = playlist
 
@@ -32,11 +32,11 @@ class SongObject:
     # ================================
 
     @property
-    def youtube_link(self) -> str:
+    def song_link(self) -> str:
         """
-        returns youtube link
+        returns song link
         """
-        return self._youtube_link
+        return self._song_link
 
     @property
     def song_name(self) -> str:
@@ -176,7 +176,7 @@ class SongObject:
         # ! internally the only reason this exists is that it helps in saving to disk
 
         return {
-            "youtube_link": self._youtube_link,
+            "song_link": self._song_link,
             "raw_track_meta": self._raw_track_meta,
             "raw_album_meta": self._raw_album_meta,
             "raw_artist_meta": self._raw_artist_meta,

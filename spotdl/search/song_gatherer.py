@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from spotdl.providers import (
+    bfh_provider,
     metadata_provider,
     yt_provider,
     ytm_provider,
@@ -21,7 +22,7 @@ from spotdl.providers.provider_utils import (
 def from_spotify_url(
     spotify_url: str,
     output_format: str = None,
-    use_youtube: bool = False,
+    provider: str = 'ytm',
     lyrics_provider: str = None,
     playlist: dict = None,
 ) -> SongObject:
@@ -72,24 +73,29 @@ def from_spotify_url(
         raise OSError(f"{converted_file_name} already downloaded")
 
     # Get the song's downloadable audio link
-    if use_youtube:
+    if provider == 'yt':
         print(f'Searching YouTube for "{display_name}"', end="\r")
-        youtube_link = yt_provider.search_and_get_best_match(
+        song_link = yt_provider.search_and_get_best_match(
             song_name, contributing_artists, duration, isrc
         )
-    else:
+    elif provider == 'ytm':
         print(f'Searching YouTube Music for "{display_name}"', end="\r")
-        youtube_link = ytm_provider.search_and_get_best_match(
+        song_link = ytm_provider.search_and_get_best_match(
+            song_name, contributing_artists, album_name, duration, isrc
+        )
+    else:
+        print(f'Searching Biffhard for "{display_name}"', end="\r")
+        song_link = bfh_provider.search_and_get_best_match(
             song_name, contributing_artists, album_name, duration, isrc
         )
 
     # Check if we found youtube url
-    if youtube_link is None:
-        print("Could not match any of the results on YouTube. Skipping")
-        raise LookupError("Could not match any of the results on YouTube for")
+    if song_link is None:
+        print(f'Could not match any of the results for "{display_name}"')
+        #raise LookupError("Could not match any of the results for")
     else:
         print(" " * (len(display_name) + 25), end="\r")
-        print(f'Found YouTube URL for "{display_name}" : {youtube_link}')
+        print(f'Found URL for "{display_name}" : {song_link}')
 
     # (try to) Get lyrics from musixmatch/genius
     # use musixmatch as the default provider
@@ -99,14 +105,14 @@ def from_spotify_url(
         lyrics = lyrics_providers.get_lyrics_musixmatch(song_name, contributing_artists)
 
     return SongObject(
-        raw_track_meta, raw_album_meta, raw_artist_meta, youtube_link, lyrics, playlist
+        raw_track_meta, raw_album_meta, raw_artist_meta, song_link, lyrics, playlist
     )
 
 
 def from_search_term(
     query: str,
     output_format: str = None,
-    use_youtube: bool = False,
+    provider: str = 'ytm',
     lyrics_provider: str = None,
 ) -> List[SongObject]:
     """
@@ -130,9 +136,9 @@ def from_search_term(
     song_url = "http://open.spotify.com/track/" + result["tracks"]["items"][0]["id"]
     try:
         song = from_spotify_url(
-            song_url, output_format, use_youtube, lyrics_provider, None
+            song_url, output_format, provider, lyrics_provider, None
         )
-        return [song] if song.youtube_link is not None else []
+        return [song] if song.song_link is not None else []
     except (LookupError, OSError, ValueError):
         return []
 
@@ -140,7 +146,7 @@ def from_search_term(
 def from_album(
     album_url: str,
     output_format: str = None,
-    use_youtube: bool = False,
+    provider: str = 'ytm',
     lyrics_provider: str = None,
     generate_m3u: bool = False,
     threads: int = 1,
@@ -186,7 +192,7 @@ def from_album(
             song = from_spotify_url(
                 "https://open.spotify.com/track/" + track["id"],
                 output_format,
-                use_youtube,
+                provider,
                 lyrics_provider,
                 None,
             )
@@ -216,7 +222,7 @@ def from_album(
         if result[1] is not None:
             album_text += result[1]
 
-        if result[0] is not None and result[0].youtube_link is not None:
+        if result[0] is not None:
             tracks.append(result[0])
 
     if album_response and generate_m3u is True:
@@ -240,7 +246,7 @@ def from_album(
 def from_playlist(
     playlist_url: str,
     output_format: str = None,
-    use_youtube: bool = False,
+    provider: str = 'ytm',
     lyrics_provider: str = None,
     generate_m3u: bool = False,
     threads: int = 1,
@@ -296,7 +302,7 @@ def from_playlist(
             song = from_spotify_url(
                 "https://open.spotify.com/track/" + track["track"]["id"],
                 output_format,
-                use_youtube,
+                provider,
                 lyrics_provider,
                 playlist,
             )
@@ -328,7 +334,7 @@ def from_playlist(
         if result[1] is not None:
             playlist_text += result[1]
 
-        if result[0] is not None and result[0].youtube_link is not None:
+        if result[0] is not None:
             tracks.append(result[0])
 
     if playlist_response and generate_m3u is True:
@@ -352,7 +358,7 @@ def from_playlist(
 def from_artist(
     artist_url: str,
     output_format: str = None,
-    use_youtube: bool = False,
+    provider: str = 'ytm',
     lyrics_provider: str = None,
     threads: int = 1,
 ) -> List[SongObject]:
@@ -452,7 +458,7 @@ def from_artist(
             return from_spotify_url(
                 f"https://open.spotify.com/track/{track_uri.split(':')[-1]}",
                 output_format,
-                use_youtube,
+                provider,
                 lyrics_provider,
                 None,
             )
@@ -463,7 +469,7 @@ def from_artist(
         results = executor.map(get_song, tracks_object.values())
 
     for result in results:
-        if result is not None and result.youtube_link is not None:
+        if result is not None:
             artist_tracks.append(result)
 
     return artist_tracks
@@ -471,7 +477,7 @@ def from_artist(
 
 def from_saved_tracks(
     output_format: str = None,
-    use_youtube: bool = False,
+    provider: str = 'ytm',
     lyrics_provider: str = None,
     threads: int = 1,
 ) -> List[SongObject]:
@@ -516,7 +522,7 @@ def from_saved_tracks(
             return from_spotify_url(
                 "https://open.spotify.com/track/" + track["track"]["id"],
                 output_format,
-                use_youtube,
+                provider,
                 lyrics_provider,
                 None,
             )
@@ -527,7 +533,7 @@ def from_saved_tracks(
         results = executor.map(get_song, saved_tracks)
 
     for result in results:
-        if result is not None and result.youtube_link is not None:
+        if result is not None:
             tracks.append(result)
 
     return tracks
@@ -545,9 +551,9 @@ def from_dump(data_dump: dict) -> SongObject:
     raw_track_meta = data_dump["raw_track_meta"]
     raw_album_meta = data_dump["raw_album_meta"]
     raw_artist_meta = data_dump["raw_artist_meta"]
-    youtube_link = data_dump["youtube_link"]
+    song_link = data_dump["song_link"]
     lyrics = data_dump["lyrics"]
 
     return SongObject(
-        raw_track_meta, raw_album_meta, raw_artist_meta, youtube_link, lyrics, None
+        raw_track_meta, raw_album_meta, raw_artist_meta, song_link, lyrics, None
     )

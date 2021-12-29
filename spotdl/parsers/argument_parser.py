@@ -120,7 +120,10 @@ def parse_arguments():
 
     # Option to use youtube instead of youtube music
     parser.add_argument(
-        "--use-youtube", help="Use youtube instead of YTM", action="store_true"
+        "--provider",
+        help="Use provider",
+        choices={"yt", "ytm", "bfh"},
+        default="bfh",
     )
 
     # Option to select a lyrics provider
