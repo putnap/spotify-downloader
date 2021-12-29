@@ -7,6 +7,7 @@ import concurrent.futures
 
 from pathlib import Path
 import urllib
+import time
 from yt_dlp import YoutubeDL
 from typing import List, Optional
 
@@ -311,22 +312,22 @@ class DownloadManager:
         self, converted_file_name, temp_folder, download_handler, song_link
     ):
         # ! The actual download, if there is any error, it'll be here,
-        remaining_download_tries = 5
+        download_attempts = 0
         while True:
             try:
                 temp_path = f"{temp_folder}/{os.path.basename(song_link)}"
                 urllib.request.urlretrieve(song_link, temp_path, download_handler)
                 return Path(temp_path)
             except Exception as e:
-                remaining_download_tries = remaining_download_tries - 1
-                if (remaining_download_tries == 0):
+                download_attempts += 1
+                if (download_attempts == 10):
                     temp_files = Path(temp_folder).glob(f"{converted_file_name}.*")
                     for temp_file in temp_files:
                         temp_file.unlink()
                     raise e
                 else:
-                    print(f"Retrying {converted_file_name}, remaining retries {remaining_download_tries}")
-                    os.times.sleep(0.1)
+                    print(f"Retrying {converted_file_name}, download attempts {download_attempts}")
+                    time.sleep(0.5 * download_attempts)
                     continue
 
     async def _perform_youtube_audio_download_async(

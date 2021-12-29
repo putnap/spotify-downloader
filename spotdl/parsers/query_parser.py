@@ -62,17 +62,16 @@ def parse_request(
 ) -> List[SongObject]:
     song_list: List[SongObject] = []
     if (
-        ("youtube.com/watch?v=" in request or "youtu.be/" in request)
+        ("youtube.com/watch?v=" in request or "youtu.be/" in request or "biffhard" in request)
         and "open.spotify.com" in request
         and "track" in request
         and "|" in request
     ):
         urls = request.split("|")
-
-        if len(urls) <= 1 or "youtu" not in urls[0] or "spotify" not in urls[1]:
-            print("Incorrect format used, please use YouTubeURL|SpotifyURL")
+        if len(urls) <= 1 or ("youtu" not in urls[0] and "biffhard" not in urls[0]) or "spotify" not in urls[1]:
+            print("Incorrect format used, please use SongUrl|SpotifyURL")
         else:
-            print("Fetching YouTube video with spotify metadata")
+            print("Fetching song with spotify metadata")
             song_list = [
                 song
                 for song in [
@@ -139,7 +138,7 @@ def parse_request(
 
 
 def get_youtube_meta_track(
-    youtube_url: str,
+    song_url: str,
     spotify_url: str,
     output_format: str = None,
     lyrics_provider: str = None,
@@ -176,5 +175,5 @@ def get_youtube_meta_track(
         lyrics = lyrics_providers.get_lyrics_musixmatch(song_name, contributing_artist)
 
     return SongObject(
-        raw_track_meta, raw_album_meta, raw_artist_meta, youtube_url, lyrics, None
+        raw_track_meta, raw_album_meta, raw_artist_meta, song_url, lyrics, None
     )
