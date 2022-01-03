@@ -297,3 +297,5 @@ def set_id3_data(converted_file_path, song_object, output_format):
     function = SET_ID3_FUNCTIONS.get(output_format)
     if function:
         function(converted_file_path, song_object)
+    else:
+        print(f'File format "{output_format}" is not recognized')

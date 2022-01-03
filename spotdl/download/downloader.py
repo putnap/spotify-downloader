@@ -138,9 +138,6 @@ class DownloadManager:
         display_progress_tracker = self.display_manager.new_progress_tracker(
             song_object
         )
-        if song_object.song_link is None:
-            display_progress_tracker.notify_download_not_found()
-            return
 
         # ! since most errors are expected to happen within this function, we wrap in
         # ! exception catcher to prevent blocking on multiple downloads
@@ -153,117 +150,134 @@ class DownloadManager:
             # ! platform agnostic
 
             # Create a spotdl-temp folder if not present
-            temp_folder = Path("spotdl-temp")
 
-            if not temp_folder.exists():
-                temp_folder.mkdir()
-
-            if self.arguments["path_template"] is not None:
-                converted_file_path = _parse_path_template(
-                    self.arguments["path_template"],
-                    song_object,
-                    self.arguments["output_format"],
-                )
-            else:
-                converted_file_path = _get_converted_file_path(
-                    song_object, self.arguments["output_format"]
-                )
-
-            # if a song is already downloaded skip it
-            if converted_file_path.is_file():
-                if self.display_manager:
-                    display_progress_tracker.notify_download_skip()
+            if song_object.song_link is None:
+                display_progress_tracker.notify_download_not_found()
                 if self.download_tracker:
                     self.download_tracker.notify_download_completion(song_object)
-
-                # ! None is the default return value of all functions, we just explicitly define
-                # ! it here as a continent way to avoid executing the rest of the function.
                 return None
 
-            converted_file_path.parent.mkdir(parents=True, exist_ok=True)
-
-            if (self.arguments["provider"] == "bfh"):
-                try:
-                    downloaded_file_path_string = await self._perform_download_async(
-                        converted_file_path.name.rsplit(".", 1)[0],
-                        temp_folder,
-                        display_progress_tracker.progress_hook,
-                        song_object.song_link,
-                    )
-                except Exception:
-                    print(
-                        f'Unable to get audio stream for "{song_object.song_name}" '
-                        f'by "{song_object.contributing_artists[0]}" '
-                        f'from url "{song_object.song_link}"'
-                    )
-                    return None
-                    
-                downloaded_file_path = Path(downloaded_file_path_string)
-                downloaded_file_path.rename(converted_file_path)
-                display_progress_tracker.notify_conversion_completion()
+            song_path = Path(song_object.song_link)
+            if song_path.is_file():
+                converted_file_path = song_path
                 ffmpeg_success = True
-            else:
-                # download Audio from YouTube
-                if self.arguments["output_format"] == "m4a":
-                    ytdl_format = "bestaudio[ext=m4a]/bestaudio/best"
-                elif self.arguments["output_format"] == "opus":
-                    ytdl_format = "bestaudio[ext=webm]/bestaudio/best"
-                else:
-                    ytdl_format = "bestaudio"
-
-                # download Audio from YouTube
-                audio_handler = YoutubeDL(
-                    {
-                        "format": ytdl_format,
-                        "outtmpl": f"{temp_folder}/%(id)s.%(ext)s",
-                        "quiet": True,
-                        "no_warnings": True,
-                        "logger": YTDLLogger(),
-                        "progress_hooks": [display_progress_tracker.ytdl_progress_hook]
-                        if display_progress_tracker
-                        else [],
-                    }
-                )
-
-                try:
-                    downloaded_file_path_string = await self._perform_youtube_audio_download_async(
-                        converted_file_path.name.rsplit(".", 1)[0],
-                        temp_folder,
-                        audio_handler,
-                        song_object.song_link,
-                    )
-                except Exception:
-                    print(
-                        f'Unable to get audio stream for "{song_object.song_name}" '
-                        f'by "{song_object.contributing_artists[0]}" '
-                        f'from video "{song_object.song_link}"'
-                    )
-                    return None
-
-                if downloaded_file_path_string is None:
-                    return None
-
-                if display_progress_tracker:
-                    display_progress_tracker.notify_youtube_download_completion()
-
-                downloaded_file_path = Path(downloaded_file_path_string)
-
-                if (
-                    downloaded_file_path.suffix == ".m4a"
-                    and self.arguments["output_format"] == "m4a"
-                ):
-                    downloaded_file_path.rename(converted_file_path)
-                    ffmpeg_success = True
-                else:
-                    ffmpeg_success = await ffmpeg.convert(
-                        downloaded_file_path=downloaded_file_path,
-                        converted_file_path=converted_file_path,
-                        output_format=self.arguments["output_format"],
-                        ffmpeg_path=self.arguments["ffmpeg"],
-                    )
-
                 if display_progress_tracker:
                     display_progress_tracker.notify_conversion_completion()
+            else:
+                temp_folder = Path("spotdl-temp")
+
+                if not temp_folder.exists():
+                    temp_folder.mkdir()
+                if self.arguments["path_template"] is not None:
+                    converted_file_path = _parse_path_template(
+                        self.arguments["path_template"],
+                        song_object,
+                        self.arguments["output_format"],
+                    )
+                else:
+                    converted_file_path = _get_converted_file_path(
+                        song_object, self.arguments["output_format"]
+                    )
+
+                # if a song is already downloaded skip it
+                if converted_file_path.is_file():
+                    if self.display_manager:
+                        display_progress_tracker.notify_download_skip()
+                    if self.download_tracker:
+                        self.download_tracker.notify_download_completion(song_object)
+
+                    # ! None is the default return value of all functions, we just explicitly define
+                    # ! it here as a continent way to avoid executing the rest of the function.
+                    return None
+
+                converted_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+                if (self.arguments["provider"] == "bfh"):
+                    try:
+                        downloaded_file_path_string = await self._perform_download_async(
+                            converted_file_path.name.rsplit(".", 1)[0],
+                            temp_folder,
+                            display_progress_tracker.progress_hook,
+                            song_object.song_link,
+                        )
+                    except Exception:
+                        print(
+                            f'Unable to get audio stream for "{song_object.song_name}" '
+                            f'by "{song_object.contributing_artists[0]}" '
+                            f'from url "{song_object.song_link}"'
+                        )
+                        return None
+                        
+                    downloaded_file_path = Path(downloaded_file_path_string)
+                    downloaded_file_path.rename(converted_file_path)
+                    display_progress_tracker.notify_conversion_completion()
+                    ffmpeg_success = True
+                else:
+                    # download Audio from YouTube
+                    if self.arguments["output_format"] == "m4a":
+                        ytdl_format = "bestaudio[ext=m4a]/bestaudio/best"
+                    elif self.arguments["output_format"] == "opus":
+                        ytdl_format = "bestaudio[ext=webm]/bestaudio/best"
+                    else:
+                        ytdl_format = "bestaudio"
+
+                    # download Audio from YouTube
+                    audio_handler = YoutubeDL(
+                        {
+                            "format": ytdl_format,
+                            "outtmpl": f"{temp_folder}/%(id)s.%(ext)s",
+                            "quiet": True,
+                            "no_warnings": True,
+                            "logger": YTDLLogger(),
+                            "progress_hooks": [display_progress_tracker.ytdl_progress_hook]
+                            if display_progress_tracker
+                            else [],
+                        }
+                    )
+
+                    try:
+                        downloaded_file_path_string = await self._perform_youtube_audio_download_async(
+                            converted_file_path.name.rsplit(".", 1)[0],
+                            temp_folder,
+                            audio_handler,
+                            song_object.song_link,
+                        )
+                    except Exception:
+                        print(
+                            f'Unable to get audio stream for "{song_object.song_name}" '
+                            f'by "{song_object.contributing_artists[0]}" '
+                            f'from video "{song_object.song_link}"'
+                        )
+                        return None
+
+                    if downloaded_file_path_string is None:
+                        return None
+
+                    if display_progress_tracker:
+                        display_progress_tracker.notify_youtube_download_completion()
+
+                    downloaded_file_path = Path(downloaded_file_path_string)
+
+                    if (
+                        downloaded_file_path.suffix == ".m4a"
+                        and self.arguments["output_format"] == "m4a"
+                    ):
+                        downloaded_file_path.rename(converted_file_path)
+                        ffmpeg_success = True
+                    else:
+                        ffmpeg_success = await ffmpeg.convert(
+                            downloaded_file_path=downloaded_file_path,
+                            converted_file_path=converted_file_path,
+                            output_format=self.arguments["output_format"],
+                            ffmpeg_path=self.arguments["ffmpeg"],
+                        )
+
+                    # delete the unnecessary YouTube download File
+                    if downloaded_file_path and downloaded_file_path.is_file():
+                        downloaded_file_path.unlink()
+
+                    if display_progress_tracker:
+                        display_progress_tracker.notify_conversion_completion()
 
             if ffmpeg_success is False:
                 # delete the file that wasn't successfully converted
@@ -280,10 +294,6 @@ class DownloadManager:
 
             if self.download_tracker:
                 self.download_tracker.notify_download_completion(song_object)
-
-            # delete the unnecessary YouTube download File
-            if downloaded_file_path and downloaded_file_path.is_file():
-                downloaded_file_path.unlink()
 
         except Exception as e:
             tb = traceback.format_exc()

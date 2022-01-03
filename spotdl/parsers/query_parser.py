@@ -1,6 +1,6 @@
 from typing import List
 from pathlib import Path
-
+from os.path import exists as file_exists
 from spotdl.search import SongObject, song_gatherer
 from spotdl.providers import lyrics_providers, metadata_provider
 
@@ -62,13 +62,12 @@ def parse_request(
 ) -> List[SongObject]:
     song_list: List[SongObject] = []
     if (
-        ("youtube.com/watch?v=" in request or "youtu.be/" in request or "biffhard" in request)
+        "|" in request
         and "open.spotify.com" in request
         and "track" in request
-        and "|" in request
     ):
         urls = request.split("|")
-        if len(urls) <= 1 or ("youtu" not in urls[0] and "biffhard" not in urls[0]) or "spotify" not in urls[1]:
+        if len(urls) <= 1 or ("youtu" not in urls[0] and "biffhard" not in urls[0] and not file_exists(urls[0])) or "spotify" not in urls[1]:
             print("Incorrect format used, please use SongUrl|SpotifyURL")
         else:
             print("Fetching song with spotify metadata")
@@ -81,6 +80,28 @@ def parse_request(
                 ]
                 if song is not None
             ]
+        # if (len(urls) <= 1 or "spotify" not in urls[1]):
+        #     print("Incorrect format used, please use (SongUrl or FilePath)|SpotifyURL")
+        # elif ("youtube.com/watch?v=" in urls[0] or "youtu.be/" in urls[0] or "biffhard" in urls[0] or file_exists(urls[0])):
+        #     print("Fetching song with spotify metadata")
+        #     song_list = [
+        #         song
+        #         for song in [
+        #             get_youtube_meta_track(
+        #                 urls[0], urls[1], output_format, lyrics_provider
+        #             )
+        #         ]
+        #         if song is not None
+        #     ]
+        # else:
+        #     path = Path(urls[0])
+        #     if (not path.is_file):
+        #         print("Incorrect format used, please use (SongUrl or FilePath)|SpotifyURL")
+        #     else:
+        #         set_id3_data(
+        #             path, song_object, self.arguments["output_format"]
+        #         )
+        
     elif "open.spotify.com" in request and "track" in request:
         print("Fetching Song...")
         song = song_gatherer.from_spotify_url(
@@ -163,7 +184,7 @@ def get_youtube_meta_track(
     converted_file_path = Path(".", f"{converted_file_name}.{output_format}")
 
     # if a song is already downloaded skip it
-    if converted_file_path.is_file():
+    if not file_exists(song_url) and converted_file_path.is_file():
         print(f'Skipping "{converted_file_name}" as it\'s already downloaded')
         return None
 
