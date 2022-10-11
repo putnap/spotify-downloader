@@ -65,37 +65,39 @@ def from_spotify_url(
             song_name, [raw_track_meta["artists"][0]["name"]]
         )
 
+    song_link = song_name
+
     converted_file_path = Path(".", f"{converted_file_name}.{output_format}")
 
     # if a song is already downloaded skip it
-    if converted_file_path.is_file():
-        print(f'Skipping "{converted_file_name}" as it\'s already downloaded')
-        raise OSError(f"{converted_file_name} already downloaded")
+    # if converted_file_path.is_file():
+    #     print(f'Skipping "{converted_file_name}" as it\'s already downloaded')
+    #     raise OSError(f"{converted_file_name} already downloaded")
 
-    # Get the song's downloadable audio link
-    if provider == 'yt':
-        print(f'Searching YouTube for "{display_name}"', end="\r")
-        song_link = yt_provider.search_and_get_best_match(
-            song_name, contributing_artists, duration, isrc
-        )
-    elif provider == 'ytm':
-        print(f'Searching YouTube Music for "{display_name}"', end="\r")
-        song_link = ytm_provider.search_and_get_best_match(
-            song_name, contributing_artists, album_name, duration, isrc
-        )
-    else:
-        print(f'Searching Biffhard for "{display_name}"', end="\r")
-        song_link = bfh_provider.search_and_get_best_match(
-            song_name, contributing_artists, album_name, duration, isrc
-        )
+    # # Get the song's downloadable audio link
+    # if provider == 'yt':
+    #     print(f'Searching YouTube for "{display_name}"', end="\r")
+    #     song_link = yt_provider.search_and_get_best_match(
+    #         song_name, contributing_artists, duration, isrc
+    #     )
+    # elif provider == 'ytm':
+    #     print(f'Searching YouTube Music for "{display_name}"', end="\r")
+    #     song_link = ytm_provider.search_and_get_best_match(
+    #         song_name, contributing_artists, album_name, duration, isrc
+    #     )
+    # else:
+    #     print(f'Searching Biffhard for "{display_name}"', end="\r")
+    #     song_link = bfh_provider.search_and_get_best_match(
+    #         song_name, contributing_artists, album_name, duration, isrc
+    #     )
 
-    # Check if we found youtube url
-    if song_link is None:
-        print(f'Could not match any of the results for "{display_name}"')
-        #raise LookupError("Could not match any of the results for")
-    else:
-        print(" " * (len(display_name) + 25), end="\r")
-        print(f'Found URL for "{display_name}" : {song_link}')
+    # # Check if we found youtube url
+    # if song_link is None:
+    #     print(f'Could not match any of the results for "{display_name}"')
+    #     #raise LookupError("Could not match any of the results for")
+    # else:
+    #     print(" " * (len(display_name) + 25), end="\r")
+    #     print(f'Found URL for "{display_name}" : {song_link}')
 
     # (try to) Get lyrics from musixmatch/genius
     # use musixmatch as the default provider
@@ -104,6 +106,7 @@ def from_spotify_url(
     else:
         lyrics = lyrics_providers.get_lyrics_musixmatch(song_name, contributing_artists)
 
+    print(display_name)
     return SongObject(
         raw_track_meta, raw_album_meta, raw_artist_meta, song_link, lyrics, playlist
     )

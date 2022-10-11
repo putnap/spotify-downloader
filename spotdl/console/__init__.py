@@ -86,6 +86,6 @@ def console_entry_point():
             arguments.path_template,
         )
 
-        # Start downloading
-        if len(song_list) > 0:
-            downloader.download_multiple_songs(song_list)
+        # # Start downloading
+        # if len(song_list) > 0:
+        #     downloader.download_multiple_songs(song_list)
